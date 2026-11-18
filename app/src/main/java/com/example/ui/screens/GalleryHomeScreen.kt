@@ -81,7 +81,9 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -141,9 +143,7 @@ fun GalleryHomeScreen(
 
   var isHeaderSearchActive by remember { mutableStateOf(false) }
   var isProSheetOpen by remember { mutableStateOf(false) }
-  var isOtaDialogOpen by remember { mutableStateOf(false) }
   var isOtaBannerDismissed by remember { mutableStateOf(false) }
-  var otaUrlInput by remember(otaState.manifestUrl) { mutableStateOf(otaState.manifestUrl) }
 
   // Zero-permission Photo Picker to import real photos/videos
   val photoPickerLauncher = rememberLauncherForActivityResult(
@@ -178,7 +178,11 @@ fun GalleryHomeScreen(
   val cardBg = if (isLightMode) NovaLightCardBg else NovaDarkCardBg
   val cardBorder = if (isLightMode) NovaLightCardBorder else NovaDarkCardBorder
   val tileBg = if (isLightMode) Color(0xFFE2E8F0) else NovaDarkTileBg
-  val accentColor = Color(0xFF0066FF)
+  val accentColor = remember(otaState.accentColorHex) {
+    runCatching {
+      otaState.accentColorHex?.let { Color(android.graphics.Color.parseColor(it)) }
+    }.getOrNull() ?: Color(0xFF0066FF)
+  }
 
   // Group timeline media into date sections ("Today", "Yesterday", "Nov 10") or sort group
   val timelineRows = remember(filteredMedia, sortOrder, sortAscending) {
@@ -370,11 +374,23 @@ fun GalleryHomeScreen(
               color = textColor,
               modifier = Modifier.testTag("header_gallery_title")
             )
-            // OTA Status Badge (Checking / Syncing / Version Updated / Offline Mode)
+            Text(
+              text = "अयाज बलोच (AYAZ BALOCH) • Nova Gallery",
+              fontSize = 11.sp,
+              fontWeight = FontWeight.SemiBold,
+              style = TextStyle(
+                brush = Brush.linearGradient(
+                  colors = listOf(Color(0xFF38BDF8), Color(0xFFC084FC))
+                )
+              ),
+              maxLines = 1,
+              overflow = TextOverflow.Ellipsis
+            )
+            // Passive Automatic Background Sync Status Badge (no manual click/popup)
             val (otaBadgeColor, otaBadgeText) = when (otaState.status) {
-              OtaSyncStatus.CHECKING -> Color(0xFF34D399) to "Checking OTA Update..."
-              OtaSyncStatus.SYNCING -> Color(0xFF34D399) to "Syncing OTA..."
-              OtaSyncStatus.UPDATED -> Color(0xFF60A5FA) to "Version ${otaState.version} (Updated)"
+              OtaSyncStatus.CHECKING -> Color(0xFF34D399) to "Auto-Checking..."
+              OtaSyncStatus.SYNCING -> Color(0xFF34D399) to "Updating..."
+              OtaSyncStatus.UPDATED -> Color(0xFF60A5FA) to "Version ${otaState.version} (Live)"
               OtaSyncStatus.OFFLINE -> Color(0xFFF87171) to "Offline Mode"
             }
             Surface(
@@ -384,10 +400,6 @@ fun GalleryHomeScreen(
               modifier = Modifier
                 .padding(top = 4.dp)
                 .clip(RoundedCornerShape(20.dp))
-                .clickable {
-                  otaUrlInput = otaState.manifestUrl
-                  isOtaDialogOpen = true
-                }
                 .testTag("ota_status_pill")
             ) {
               Text(
@@ -646,15 +658,45 @@ fun GalleryHomeScreen(
       Box(
         modifier = Modifier
           .fillMaxSize()
-          .padding(24.dp),
+          .padding(20.dp),
         contentAlignment = Alignment.Center
       ) {
-        Text(
-          text = "कोई मीडिया उपलब्ध नहीं है। परमिशन दें।",
-          fontSize = 14.sp,
-          color = subtextColor,
-          modifier = Modifier.testTag("awaiting_scan_text")
-        )
+        Surface(
+          color = if (isLightMode) Color.White else Color(0xFF1E293B),
+          shape = RoundedCornerShape(14.dp),
+          border = BorderStroke(1.dp, Color(0xFF38BDF8).copy(alpha = 0.45f)),
+          modifier = Modifier
+            .fillMaxWidth()
+            .testTag("inline_permission_banner")
+        ) {
+          Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(18.dp)
+          ) {
+            Text(
+              text = "📁 ऑटोमैटिक मीडिया स्कैन के लिए स्टोरेज परमिशन दें:",
+              fontSize = 14.sp,
+              color = textColor,
+              textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Button(
+              onClick = { viewModel.performStorageScan() },
+              shape = RoundedCornerShape(8.dp),
+              colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF0284C7),
+                contentColor = Color.White
+              ),
+              modifier = Modifier.testTag("grant_permission_rescan_btn")
+            ) {
+              Text(
+                text = "Grant Permission & Rescan",
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 13.sp
+              )
+            }
+          }
+        }
       }
     } else if (timelineRows.isEmpty()) {
       Box(
@@ -824,76 +866,6 @@ fun GalleryHomeScreen(
       confirmButton = {
         TextButton(onClick = { isProSheetOpen = false }) {
           Text("Close", color = NovaProGoldStart)
-        }
-      }
-    )
-  }
-
-  // OTA Remote Config Sync Dialog
-  if (isOtaDialogOpen) {
-    AlertDialog(
-      onDismissRequest = { isOtaDialogOpen = false },
-      containerColor = cardBg,
-      title = {
-        Text(
-          text = "OTA Live Sync (GitHub)",
-          fontWeight = FontWeight.Bold,
-          color = textColor,
-          fontSize = 17.sp
-        )
-      },
-      text = {
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-          Text(
-            text = "Status: ${otaState.status.name} • Version ${otaState.version}",
-            fontSize = 12.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = accentColor
-          )
-          if (!otaState.errorMessage.isNullOrBlank() && otaState.status == OtaSyncStatus.OFFLINE) {
-            Text(
-              text = "Last check: ${otaState.errorMessage}",
-              fontSize = 11.sp,
-              color = Color(0xFFF87171)
-            )
-          }
-          Text(
-            text = "Paste your raw GitHub ota-config.json URL to fetch remote UI updates without rebuilding the APK:",
-            fontSize = 12.sp,
-            color = subtextColor
-          )
-          OutlinedTextField(
-            value = otaUrlInput,
-            onValueChange = { otaUrlInput = it },
-            placeholder = { Text("https://raw.githubusercontent.com/.../ota-config.json", fontSize = 11.sp) },
-            singleLine = true,
-            colors = OutlinedTextFieldDefaults.colors(
-              focusedBorderColor = accentColor,
-              unfocusedBorderColor = cardBorder,
-              focusedTextColor = textColor,
-              unfocusedTextColor = textColor
-            ),
-            modifier = Modifier.fillMaxWidth().testTag("ota_url_input")
-          )
-        }
-      },
-      confirmButton = {
-        Button(
-          onClick = {
-            viewModel.syncOtaUpdates(otaUrlInput)
-            isOtaBannerDismissed = false
-            isOtaDialogOpen = false
-            Toast.makeText(context, "Syncing OTA manifest...", Toast.LENGTH_SHORT).show()
-          },
-          colors = ButtonDefaults.buttonColors(containerColor = accentColor),
-          modifier = Modifier.testTag("ota_sync_now_btn")
-        ) {
-          Text("Sync OTA Now")
-        }
-      },
-      dismissButton = {
-        TextButton(onClick = { isOtaDialogOpen = false }) {
-          Text("Close", color = subtextColor)
         }
       }
     )

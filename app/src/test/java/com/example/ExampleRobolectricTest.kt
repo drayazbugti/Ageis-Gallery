@@ -77,4 +77,27 @@ class ExampleRobolectricTest {
       testFile.delete()
     }
   }
+
+  @Test
+  fun `test automatic remote config json parsing`() {
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    val manager = com.example.ota.OtaConfigManager(context)
+    val sampleJson = """
+      {
+        "version": "3.4",
+        "appTitle": "रिमझिम",
+        "announcementTitle": "Auto-Sync Active",
+        "announcementBody": "Updated seamlessly in background.",
+        "accentColor": "#38BDF8",
+        "featureBadges": ["Zero-Click", "Auto-Sync"]
+      }
+    """.trimIndent()
+    val state = manager.parseConfigJson(sampleJson, com.example.ota.OtaSyncStatus.UPDATED, 123456L)
+    assertEquals("3.4", state.version)
+    assertEquals("रिमझिम", state.appTitle)
+    assertEquals("Auto-Sync Active", state.announcementTitle)
+    assertEquals("#38BDF8", state.accentColorHex)
+    assertEquals(listOf("Zero-Click", "Auto-Sync"), state.featureBadges)
+    assertEquals(com.example.ota.OtaSyncStatus.UPDATED, state.status)
+  }
 }

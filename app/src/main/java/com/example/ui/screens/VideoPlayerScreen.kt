@@ -59,12 +59,14 @@ import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.BrightnessMedium
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Pause
@@ -72,6 +74,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.RepeatOne
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
@@ -84,6 +87,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -165,6 +170,7 @@ fun VideoPlayerScreen(
   var duration by remember { mutableLongStateOf(item.durationMs.coerceAtLeast(1000L)) }
   var isControlsVisible by remember { mutableStateOf(true) }
   var isMenuOpen by remember { mutableStateOf(false) }
+  var isBottomPopupOpen by remember { mutableStateOf(false) }
   var isSpeedPanelVisible by remember { mutableStateOf(false) }
   var isInfoDialogOpen by remember { mutableStateOf(false) }
 
@@ -1243,6 +1249,68 @@ fun VideoPlayerScreen(
                 tint = if (item.isFavorite) crimsonAccent else Color.White,
                 modifier = Modifier.size(20.dp)
               )
+            }
+
+            // Bottom Three-Dots Popup Menu (.popup-menu)
+            Box {
+              IconButton(
+                onClick = { isBottomPopupOpen = !isBottomPopupOpen },
+                modifier = Modifier.testTag("video_bottom_popup_menu_btn")
+              ) {
+                Icon(
+                  imageVector = Icons.Default.MoreVert,
+                  contentDescription = "More Video Options",
+                  tint = Color.White,
+                  modifier = Modifier.size(20.dp)
+                )
+              }
+
+              DropdownMenu(
+                expanded = isBottomPopupOpen,
+                onDismissRequest = { isBottomPopupOpen = false },
+                modifier = Modifier.background(Color(0xFF1E293B))
+              ) {
+                DropdownMenuItem(
+                  text = { Text("Details & Tags", color = Color(0xFFF1F5F9)) },
+                  leadingIcon = { Icon(Icons.Default.Info, contentDescription = null, tint = Color(0xFF38BDF8)) },
+                  onClick = {
+                    isBottomPopupOpen = false
+                    isInfoDialogOpen = true
+                  }
+                )
+                DropdownMenuItem(
+                  text = { Text("Share Video", color = Color(0xFFF1F5F9)) },
+                  leadingIcon = { Icon(Icons.Default.Share, contentDescription = null, tint = Color(0xFF38BDF8)) },
+                  onClick = {
+                    isBottomPopupOpen = false
+                    val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                      type = "video/*"
+                      putExtra(android.content.Intent.EXTRA_TEXT, "Shared from Nova Gallery: ${item.title}")
+                    }
+                    context.startActivity(android.content.Intent.createChooser(shareIntent, "Share Video"))
+                  }
+                )
+                DropdownMenuItem(
+                  text = { Text("Move to Vault", color = Color(0xFFF1F5F9)) },
+                  leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = Color(0xFFF59E0B)) },
+                  onClick = {
+                    isBottomPopupOpen = false
+                    viewModel.moveToVault(item.id)
+                    Toast.makeText(context, "Moved to Safe Vault", Toast.LENGTH_SHORT).show()
+                    onOpenVault()
+                  }
+                )
+                DropdownMenuItem(
+                  text = { Text("Delete Permanently", color = Color(0xFFEF4444)) },
+                  leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = Color(0xFFEF4444)) },
+                  onClick = {
+                    isBottomPopupOpen = false
+                    viewModel.deleteMediaPermanently(item)
+                    Toast.makeText(context, "Deleted permanently", Toast.LENGTH_SHORT).show()
+                    onBack()
+                  }
+                )
+              }
             }
           }
         }

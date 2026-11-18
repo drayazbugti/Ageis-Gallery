@@ -29,7 +29,6 @@ import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Storage
-import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -206,28 +205,7 @@ fun SettingsScreen(
         }
       }
 
-      // 5. OTA Live Updates Section
-      SettingsSectionHeader("OTA LIVE CONFIG", accentColor)
-      Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = cardBg),
-        border = androidx.compose.foundation.BorderStroke(1.dp, cardBorder),
-        modifier = Modifier.fillMaxWidth()
-      ) {
-        Column {
-          SettingsClickableRow(
-            icon = Icons.Default.Sync,
-            title = "Sync Remote OTA Config",
-            subtitle = "Status: ${otaState.status.name} • Version ${otaState.version}",
-            onClick = {
-              viewModel.syncOtaUpdates()
-              Toast.makeText(context, "Checking OTA manifest...", Toast.LENGTH_SHORT).show()
-            }
-          )
-        }
-      }
-
-      // 6. About Section
+      // 5. About Section
       SettingsSectionHeader("ABOUT", accentColor)
       Card(
         shape = RoundedCornerShape(16.dp),

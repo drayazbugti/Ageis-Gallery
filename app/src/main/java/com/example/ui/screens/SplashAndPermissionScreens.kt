@@ -36,8 +36,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -99,9 +101,22 @@ fun SplashScreen(
       Spacer(modifier = Modifier.height(6.dp))
 
       Text(
-        text = "Rimzim Gallery",
+        text = "अयाज बलोच (AYAZ BALOCH)",
         fontSize = 14.sp,
-        fontWeight = FontWeight.Normal,
+        fontWeight = FontWeight.Bold,
+        style = TextStyle(
+          brush = Brush.linearGradient(
+            colors = listOf(Color(0xFF38BDF8), Color(0xFFC084FC))
+          )
+        )
+      )
+
+      Spacer(modifier = Modifier.height(4.dp))
+
+      Text(
+        text = "Nova Gallery",
+        fontSize = 12.sp,
+        fontWeight = FontWeight.Medium,
         color = subtitleColor
       )
 

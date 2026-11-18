@@ -1,6 +1,10 @@
 package com.example.ota
 
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -16,69 +20,101 @@ enum class OtaSyncStatus {
 
 data class OtaUiState(
   val status: OtaSyncStatus = OtaSyncStatus.CHECKING,
-  val version: String = "3.3",
+  val version: String = "3.4",
   val appTitle: String? = null,
   val announcementTitle: String? = null,
   val announcementBody: String? = null,
   val accentColorHex: String? = null,
   val featureBadges: List<String> = emptyList(),
-  val manifestUrl: String = DEFAULT_OTA_URL,
   val lastSyncedAt: Long = 0L,
   val errorMessage: String? = null
-) {
-  companion object {
-    const val DEFAULT_OTA_URL =
-      "https://raw.githubusercontent.com/drayazbugti/nova-gallery/main/ota-config.json"
-  }
-}
+)
 
 class OtaConfigManager(context: Context) {
-  private val prefs = context.getSharedPreferences("nova_ota_prefs", Context.MODE_PRIVATE)
+  private val appContext = context.applicationContext
+  private val prefs = appContext.getSharedPreferences("nova_ota_prefs", Context.MODE_PRIVATE)
 
-  fun getSavedManifestUrl(): String {
-    return prefs.getString("ota_manifest_url", OtaUiState.DEFAULT_OTA_URL)
-      ?.takeIf { it.isNotBlank() }
-      ?: OtaUiState.DEFAULT_OTA_URL
+  companion object {
+    // Hardcoded GitHub raw configuration endpoint for completely automatic background sync
+    private const val HARDCODED_GITHUB_RAW_CONFIG_URL =
+      "https://raw.githubusercontent.com/drayazbugti/nova-gallery/main/ota-config.json"
   }
 
-  fun saveManifestUrl(url: String) {
-    val clean = url.trim().ifBlank { OtaUiState.DEFAULT_OTA_URL }
-    prefs.edit().putString("ota_manifest_url", clean).apply()
+  fun hasActiveInternetConnection(): Boolean {
+    return runCatching {
+      val cm = appContext.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+        ?: return false
+      val network = cm.activeNetwork ?: return false
+      val capabilities = cm.getNetworkCapabilities(network) ?: return false
+      capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+        capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+    }.getOrElse {
+      // Fallback check if validated capability isn't reported in test environments
+      runCatching {
+        val cm = appContext.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+          ?: return false
+        val network = cm.activeNetwork ?: return false
+        val capabilities = cm.getNetworkCapabilities(network) ?: return false
+        capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+      }.getOrDefault(false)
+    }
+  }
+
+  fun registerNetworkAvailableCallback(onInternetAvailable: () -> Unit): ConnectivityManager.NetworkCallback? {
+    return runCatching {
+      val cm = appContext.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+        ?: return null
+      val request = NetworkRequest.Builder()
+        .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+        .build()
+      val callback = object : ConnectivityManager.NetworkCallback() {
+        override fun onAvailable(network: Network) {
+          onInternetAvailable()
+        }
+      }
+      cm.registerNetworkCallback(request, callback)
+      callback
+    }.getOrNull()
+  }
+
+  fun unregisterNetworkCallback(callback: ConnectivityManager.NetworkCallback?) {
+    if (callback == null) return
+    runCatching {
+      val cm = appContext.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+      cm?.unregisterNetworkCallback(callback)
+    }
   }
 
   fun loadCachedState(): OtaUiState {
     val cachedJson = prefs.getString("ota_last_config_json", null)
-    val url = getSavedManifestUrl()
     val lastSyncedAt = prefs.getLong("ota_last_synced_at", 0L)
     if (cachedJson.isNullOrBlank()) {
-      return OtaUiState(status = OtaSyncStatus.CHECKING, manifestUrl = url)
+      return OtaUiState(status = OtaSyncStatus.CHECKING)
     }
     return runCatching {
-      parseConfigJson(cachedJson, url, OtaSyncStatus.CHECKING, lastSyncedAt)
+      parseConfigJson(cachedJson, OtaSyncStatus.CHECKING, lastSyncedAt)
     }.getOrElse {
-      OtaUiState(status = OtaSyncStatus.CHECKING, manifestUrl = url)
+      OtaUiState(status = OtaSyncStatus.CHECKING)
     }
   }
 
-  suspend fun fetchRemoteConfig(manifestUrl: String): OtaUiState = withContext(Dispatchers.IO) {
-    val targetUrl = manifestUrl.trim()
-    if (!targetUrl.startsWith("https://")) {
+  suspend fun fetchRemoteConfig(): OtaUiState = withContext(Dispatchers.IO) {
+    if (!hasActiveInternetConnection()) {
       return@withContext loadCachedState().copy(
         status = OtaSyncStatus.OFFLINE,
-        manifestUrl = targetUrl,
-        errorMessage = "Manifest URL must use HTTPS"
+        errorMessage = "No active internet connection"
       )
     }
 
     var connection: HttpURLConnection? = null
     try {
-      val url = URL(targetUrl)
+      val url = URL(HARDCODED_GITHUB_RAW_CONFIG_URL)
       connection = (url.openConnection() as HttpURLConnection).apply {
         requestMethod = "GET"
         connectTimeout = 6000
         readTimeout = 6000
         useCaches = false
-        setRequestProperty("Cache-Control", "no-store")
+        setRequestProperty("Cache-Control", "no-cache, no-store")
         setRequestProperty("Accept", "application/json")
       }
 
@@ -86,14 +122,13 @@ class OtaConfigManager(context: Context) {
       if (responseCode !in 200..299) {
         return@withContext loadCachedState().copy(
           status = OtaSyncStatus.OFFLINE,
-          manifestUrl = targetUrl,
           errorMessage = "HTTP $responseCode"
         )
       }
 
       val body = connection.inputStream.bufferedReader().use { it.readText() }
       val now = System.currentTimeMillis()
-      val parsed = parseConfigJson(body, targetUrl, OtaSyncStatus.UPDATED, now)
+      val parsed = parseConfigJson(body, OtaSyncStatus.UPDATED, now)
 
       prefs.edit()
         .putString("ota_last_config_json", body)
@@ -104,7 +139,6 @@ class OtaConfigManager(context: Context) {
     } catch (e: Exception) {
       loadCachedState().copy(
         status = OtaSyncStatus.OFFLINE,
-        manifestUrl = targetUrl,
         errorMessage = e.message ?: "Network unavailable"
       )
     } finally {
@@ -112,17 +146,15 @@ class OtaConfigManager(context: Context) {
     }
   }
 
-  private fun parseConfigJson(
+  fun parseConfigJson(
     rawJson: String,
-    manifestUrl: String,
     status: OtaSyncStatus,
     syncedAt: Long
   ): OtaUiState {
     val json = JSONObject(rawJson)
-    val version = json.optString("version", "3.3").ifBlank { "3.3" }
+    val version = json.optString("version", "3.4").ifBlank { "3.4" }
     val appTitle = json.optString("appTitle", "").takeIf { it.isNotBlank() }
 
-    // Support both structured fields and plain-text extraction from injectedHTML
     val rawAnnouncementTitle = json.optString("announcementTitle", "").takeIf { it.isNotBlank() }
     val rawAnnouncementBody = json.optString("announcementBody", "").takeIf { it.isNotBlank() }
     val injectedHtml = json.optString("injectedHTML", "")
@@ -148,11 +180,10 @@ class OtaConfigManager(context: Context) {
       status = status,
       version = version,
       appTitle = appTitle,
-      announcementTitle = rawAnnouncementTitle ?: if (injectedHtml != null) "OTA Remote Update" else null,
+      announcementTitle = rawAnnouncementTitle ?: if (injectedHtml != null) "Remote Update" else null,
       announcementBody = rawAnnouncementBody ?: injectedHtml,
       accentColorHex = accentColor,
       featureBadges = badgesList,
-      manifestUrl = manifestUrl,
       lastSyncedAt = syncedAt,
       errorMessage = null
     )

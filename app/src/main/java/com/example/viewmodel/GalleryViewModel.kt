@@ -7,6 +7,7 @@ import com.example.data.GalleryRepository
 import com.example.data.local.GalleryDatabase
 import com.example.data.model.MediaItem
 import com.example.data.model.MediaType
+import android.net.ConnectivityManager
 import com.example.ota.OtaConfigManager
 import com.example.ota.OtaSyncStatus
 import com.example.ota.OtaUiState
@@ -44,6 +45,8 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
   private val repository: GalleryRepository
   val vaultSecurity: VaultSecurityManager = VaultSecurityManager(application)
   private val otaConfigManager: OtaConfigManager = OtaConfigManager(application)
+  private var networkCallback: ConnectivityManager.NetworkCallback? = null
+  private var isFetchingRemoteConfig = false
 
   private val _otaState = MutableStateFlow(otaConfigManager.loadCachedState())
   val otaState: StateFlow<OtaUiState> = _otaState.asStateFlow()
@@ -57,21 +60,29 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
         repository.scanDeviceMedia()
       }
     }
-    syncOtaUpdates()
+    refreshRemoteConfigInBackground()
+    networkCallback = otaConfigManager.registerNetworkAvailableCallback {
+      refreshRemoteConfigInBackground()
+    }
   }
 
-  fun syncOtaUpdates(customUrl: String? = null) {
-    if (!customUrl.isNullOrBlank()) {
-      otaConfigManager.saveManifestUrl(customUrl)
-    }
-    val targetUrl = otaConfigManager.getSavedManifestUrl()
-    _otaState.value = _otaState.value.copy(
-      status = OtaSyncStatus.SYNCING,
-      manifestUrl = targetUrl
-    )
+  fun refreshRemoteConfigInBackground() {
+    if (isFetchingRemoteConfig) return
     viewModelScope.launch {
-      val result = otaConfigManager.fetchRemoteConfig(targetUrl)
-      _otaState.value = result
+      isFetchingRemoteConfig = true
+      try {
+        if (!otaConfigManager.hasActiveInternetConnection()) {
+          _otaState.value = _otaState.value.copy(status = OtaSyncStatus.OFFLINE)
+          return@launch
+        }
+        if (_otaState.value.status != OtaSyncStatus.UPDATED) {
+          _otaState.value = _otaState.value.copy(status = OtaSyncStatus.SYNCING)
+        }
+        val result = otaConfigManager.fetchRemoteConfig()
+        _otaState.value = result
+      } finally {
+        isFetchingRemoteConfig = false
+      }
     }
   }
 
@@ -634,5 +645,11 @@ data class GalleryFilterState(
       )
       repository.insertMediaItem(exportedItem)
     }
+  }
+
+  override fun onCleared() {
+    super.onCleared()
+    otaConfigManager.unregisterNetworkCallback(networkCallback)
+    networkCallback = null
   }
 }
