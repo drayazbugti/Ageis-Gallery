@@ -7,6 +7,9 @@ import com.example.data.GalleryRepository
 import com.example.data.local.GalleryDatabase
 import com.example.data.model.MediaItem
 import com.example.data.model.MediaType
+import com.example.ota.OtaConfigManager
+import com.example.ota.OtaSyncStatus
+import com.example.ota.OtaUiState
 import com.example.security.AuthResult
 import com.example.security.LockType
 import com.example.security.VaultSecurityManager
@@ -40,6 +43,10 @@ enum class SortOrder(val label: String) {
 class GalleryViewModel(application: Application) : AndroidViewModel(application) {
   private val repository: GalleryRepository
   val vaultSecurity: VaultSecurityManager = VaultSecurityManager(application)
+  private val otaConfigManager: OtaConfigManager = OtaConfigManager(application)
+
+  private val _otaState = MutableStateFlow(otaConfigManager.loadCachedState())
+  val otaState: StateFlow<OtaUiState> = _otaState.asStateFlow()
 
   init {
     val db = GalleryDatabase.getDatabase(application)
@@ -49,6 +56,22 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
       if (prefs.getBoolean("rimzim_permission_granted", false)) {
         repository.scanDeviceMedia()
       }
+    }
+    syncOtaUpdates()
+  }
+
+  fun syncOtaUpdates(customUrl: String? = null) {
+    if (!customUrl.isNullOrBlank()) {
+      otaConfigManager.saveManifestUrl(customUrl)
+    }
+    val targetUrl = otaConfigManager.getSavedManifestUrl()
+    _otaState.value = _otaState.value.copy(
+      status = OtaSyncStatus.SYNCING,
+      manifestUrl = targetUrl
+    )
+    viewModelScope.launch {
+      val result = otaConfigManager.fetchRemoteConfig(targetUrl)
+      _otaState.value = result
     }
   }
 

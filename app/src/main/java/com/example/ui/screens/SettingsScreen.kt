@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -78,6 +79,7 @@ fun SettingsScreen(
   val isLightMode by viewModel.isLightMode.collectAsState()
   val allMedia by viewModel.allActiveMedia.collectAsState()
   val isBgPlayback by VideoPlaybackManager.isBackgroundPlaybackEnabled.collectAsState()
+  val otaState by viewModel.otaState.collectAsState()
 
   val bgColor = if (isLightMode) NovaLightBg else NovaDarkBg
   val textColor = if (isLightMode) NovaLightText else NovaDarkText
@@ -204,7 +206,28 @@ fun SettingsScreen(
         }
       }
 
-      // 5. About Section
+      // 5. OTA Live Updates Section
+      SettingsSectionHeader("OTA LIVE CONFIG", accentColor)
+      Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = cardBg),
+        border = androidx.compose.foundation.BorderStroke(1.dp, cardBorder),
+        modifier = Modifier.fillMaxWidth()
+      ) {
+        Column {
+          SettingsClickableRow(
+            icon = Icons.Default.Sync,
+            title = "Sync Remote OTA Config",
+            subtitle = "Status: ${otaState.status.name} • Version ${otaState.version}",
+            onClick = {
+              viewModel.syncOtaUpdates()
+              Toast.makeText(context, "Checking OTA manifest...", Toast.LENGTH_SHORT).show()
+            }
+          )
+        }
+      }
+
+      // 6. About Section
       SettingsSectionHeader("ABOUT", accentColor)
       Card(
         shape = RoundedCornerShape(16.dp),
@@ -215,10 +238,10 @@ fun SettingsScreen(
         Column {
           SettingsClickableRow(
             icon = Icons.Default.Info,
-            title = "Nova Gallery",
-            subtitle = "Version 2.5 • Developed by Ayaz Baloch",
+            title = "रिमझिम (Nova Gallery)",
+            subtitle = "Version ${otaState.version} • Developed by Ayaz Baloch",
             onClick = {
-              Toast.makeText(context, "Nova Gallery v2.5 by Ayaz Baloch", Toast.LENGTH_SHORT).show()
+              Toast.makeText(context, "रिमझिम (Nova Gallery) v${otaState.version}", Toast.LENGTH_SHORT).show()
             }
           )
         }

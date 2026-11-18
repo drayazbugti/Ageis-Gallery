@@ -1,0 +1,12 @@
+{
+  "version": "3.3",
+  "appTitle": "रिमझिम",
+  "announcementTitle": "OTA Live Connected",
+  "announcementBody": "Remote features, title & announcements sync automatically from GitHub without reinstalling the APK.",
+  "accentColor": "#3B82F6",
+  "featureBadges": [
+    "Live GitHub OTA",
+    "Auto-Scan Storage",
+    "Persistent Trash & Vault"
+  ]
+}
