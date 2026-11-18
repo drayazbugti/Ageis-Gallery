@@ -1,0 +1,6 @@
+{
+  "name": "Nova Gallery",
+  "description": "Secure modern gallery with dual photo & video player, photo editor, tags, recycle bin, and encrypted Safe Folder vault.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

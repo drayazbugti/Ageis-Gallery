@@ -1,0 +1,73 @@
+package com.example.ui.theme
+
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
+
+private val DarkColorScheme =
+  darkColorScheme(
+    primary = AgsCleanDarkAccent,
+    onPrimary = Color.White,
+    primaryContainer = AgsCleanDarkCardBg,
+    onPrimaryContainer = Color.White,
+    secondary = Color(0xFF0D6EFD),
+    onSecondary = Color.White,
+    secondaryContainer = AgsCleanDarkCardBg,
+    onSecondaryContainer = Color.White,
+    tertiary = NeonEmerald,
+    onTertiary = Color.Black,
+    background = AgsCleanDarkBg,
+    onBackground = AgsCleanDarkText,
+    surface = AgsCleanDarkCardBg,
+    onSurface = AgsCleanDarkText,
+    surfaceVariant = AgsCleanDarkCardBg,
+    onSurfaceVariant = AgsCleanDarkSubtext,
+    outline = AgsCleanDarkCardBorder,
+    outlineVariant = Color(0xFF333333),
+    error = CoralAlert,
+    onError = Color.White
+  )
+
+private val LightColorScheme =
+  lightColorScheme(
+    primary = AgsCleanLightAccent,
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFE7F1FF),
+    onPrimaryContainer = Color(0xFF0A58CA),
+    secondary = Color(0xFF0D6EFD),
+    onSecondary = Color.White,
+    secondaryContainer = AgsCleanLightCardBg,
+    onSecondaryContainer = AgsCleanLightText,
+    tertiary = NeonEmerald,
+    onTertiary = Color.White,
+    background = AgsCleanLightBg,
+    onBackground = AgsCleanLightText,
+    surface = AgsCleanLightCardBg,
+    onSurface = AgsCleanLightText,
+    surfaceVariant = Color(0xFFE9ECEF),
+    onSurfaceVariant = AgsCleanLightSubtext,
+    outline = AgsCleanLightCardBorder,
+    outlineVariant = Color(0xFFCED4DA),
+    error = CoralAlert,
+    onError = Color.White
+  )
+
+@Composable
+fun MyApplicationTheme(
+  darkTheme: Boolean = false, // Default to AGS Clean Light Mode (#f8f9fa)
+  dynamicColor: Boolean = false,
+  content: @Composable () -> Unit,
+) {
+  val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+
+
+
+  MaterialTheme(
+    colorScheme = colorScheme,
+    typography = Typography,
+    content = content
+  )
+}
