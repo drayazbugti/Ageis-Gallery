@@ -46,7 +46,7 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
   val vaultSecurity: VaultSecurityManager = VaultSecurityManager(application)
   private val otaConfigManager: OtaConfigManager = OtaConfigManager(application)
   private var networkCallback: ConnectivityManager.NetworkCallback? = null
-  private var isFetchingRemoteConfig = false
+  private var otaFetchJob: kotlinx.coroutines.Job? = null
 
   private val _otaState = MutableStateFlow(otaConfigManager.loadCachedState())
   val otaState: StateFlow<OtaUiState> = _otaState.asStateFlow()
@@ -60,29 +60,21 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
         repository.scanDeviceMedia()
       }
     }
-    refreshRemoteConfigInBackground()
+    refreshRemoteConfigInBackground(force = true)
     networkCallback = otaConfigManager.registerNetworkAvailableCallback {
-      refreshRemoteConfigInBackground()
+      refreshRemoteConfigInBackground(force = true)
     }
   }
 
-  fun refreshRemoteConfigInBackground() {
-    if (isFetchingRemoteConfig) return
-    viewModelScope.launch {
-      isFetchingRemoteConfig = true
-      try {
-        if (!otaConfigManager.hasActiveInternetConnection()) {
-          _otaState.value = _otaState.value.copy(status = OtaSyncStatus.OFFLINE)
-          return@launch
-        }
-        if (_otaState.value.status != OtaSyncStatus.UPDATED) {
-          _otaState.value = _otaState.value.copy(status = OtaSyncStatus.SYNCING)
-        }
-        val result = otaConfigManager.fetchRemoteConfig()
-        _otaState.value = result
-      } finally {
-        isFetchingRemoteConfig = false
+  fun refreshRemoteConfigInBackground(force: Boolean = false) {
+    if (!force && otaFetchJob?.isActive == true) return
+    otaFetchJob?.cancel()
+    otaFetchJob = viewModelScope.launch {
+      if (_otaState.value.status != OtaSyncStatus.UPDATED) {
+        _otaState.value = _otaState.value.copy(status = OtaSyncStatus.SYNCING)
       }
+      val result = otaConfigManager.fetchRemoteConfig()
+      _otaState.value = result
     }
   }
 

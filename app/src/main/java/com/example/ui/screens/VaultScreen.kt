@@ -291,7 +291,7 @@ fun VaultLockView(
     }
     Spacer(modifier = Modifier.height(8.dp))
     Text(
-      text = "Aegis Protected Vault",
+      text = "Nomi Protected Vault",
       style = MaterialTheme.typography.titleMedium,
       fontWeight = FontWeight.Bold
     )

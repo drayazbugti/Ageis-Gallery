@@ -85,7 +85,11 @@ fun SettingsScreen(
   val subtextColor = if (isLightMode) NovaLightSubtext else NovaDarkSubtext
   val cardBg = if (isLightMode) NovaLightCardBg else NovaDarkCardBg
   val cardBorder = if (isLightMode) NovaLightCardBorder else NovaDarkCardBorder
-  val accentColor = Color(0xFF0066FF)
+  val accentColor = remember(otaState.accentColorHex) {
+    runCatching {
+      Color(android.graphics.Color.parseColor(otaState.accentColorHex))
+    }.getOrDefault(Color(0xFF10B981))
+  }
 
   Scaffold(
     containerColor = bgColor,
@@ -216,10 +220,10 @@ fun SettingsScreen(
         Column {
           SettingsClickableRow(
             icon = Icons.Default.Info,
-            title = "रिमझिम (Nova Gallery)",
+            title = otaState.appTitle,
             subtitle = "Version ${otaState.version} • Developed by Ayaz Baloch",
             onClick = {
-              Toast.makeText(context, "रिमझिम (Nova Gallery) v${otaState.version}", Toast.LENGTH_SHORT).show()
+              Toast.makeText(context, "${otaState.appTitle} v${otaState.version}", Toast.LENGTH_SHORT).show()
             }
           )
         }
@@ -262,10 +266,10 @@ fun SettingsSwitchRow(
       Box(
         modifier = Modifier
           .size(40.dp)
-          .background(Color(0xFF0066FF).copy(alpha = 0.12f), CircleShape),
+          .background(Color(0xFF10B981).copy(alpha = 0.12f), CircleShape),
         contentAlignment = Alignment.Center
       ) {
-        Icon(icon, contentDescription = null, tint = Color(0xFF0066FF), modifier = Modifier.size(20.dp))
+        Icon(icon, contentDescription = null, tint = Color(0xFF10B981), modifier = Modifier.size(20.dp))
       }
       Spacer(modifier = Modifier.width(14.dp))
       Column {
@@ -278,7 +282,7 @@ fun SettingsSwitchRow(
       onCheckedChange = onCheckedChange,
       colors = SwitchDefaults.colors(
         checkedThumbColor = Color.White,
-        checkedTrackColor = Color(0xFF0066FF)
+        checkedTrackColor = Color(0xFF10B981)
       )
     )
   }
@@ -303,10 +307,10 @@ fun SettingsClickableRow(
       Box(
         modifier = Modifier
           .size(40.dp)
-          .background(Color(0xFF0066FF).copy(alpha = 0.12f), CircleShape),
+          .background(Color(0xFF10B981).copy(alpha = 0.12f), CircleShape),
         contentAlignment = Alignment.Center
       ) {
-        Icon(icon, contentDescription = null, tint = Color(0xFF0066FF), modifier = Modifier.size(20.dp))
+        Icon(icon, contentDescription = null, tint = Color(0xFF10B981), modifier = Modifier.size(20.dp))
       }
       Spacer(modifier = Modifier.width(14.dp))
       Column {

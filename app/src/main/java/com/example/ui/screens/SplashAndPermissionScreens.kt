@@ -3,9 +3,11 @@ package com.example.ui.screens
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,39 +29,76 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ota.OtaSyncStatus
+import com.example.ota.OtaUiState
 import kotlinx.coroutines.delay
 
 @Composable
 fun SplashScreen(
   onTimeout: () -> Unit,
+  otaState: OtaUiState = OtaUiState(),
   isLightMode: Boolean = false,
   modifier: Modifier = Modifier
 ) {
+  var startAnimation by remember { mutableStateOf(false) }
+
   LaunchedEffect(Unit) {
-    delay(1500L)
+    startAnimation = true
+    delay(2000L)
     onTimeout()
   }
 
-  val bgColor = if (isLightMode) Color(0xFFF5F6FA) else Color(0xFF0B0F15)
-  val titleColor = if (isLightMode) Color(0xFF111111) else Color.White
-  val subtitleColor = if (isLightMode) Color(0xFF666666) else Color(0xFF8C96A5)
+  val infiniteTransition = rememberInfiniteTransition(label = "SplashPulse")
+  val logoScale by infiniteTransition.animateFloat(
+    initialValue = 1.0f,
+    targetValue = 1.08f,
+    animationSpec = infiniteRepeatable(
+      animation = tween(durationMillis = 1500, easing = LinearEasing),
+      repeatMode = RepeatMode.Reverse
+    ),
+    label = "LogoScale"
+  )
+
+  val titleAlpha by animateFloatAsState(
+    targetValue = if (startAnimation) 1f else 0f,
+    animationSpec = tween(durationMillis = 1200),
+    label = "TitleAlpha"
+  )
+  val titleScale by animateFloatAsState(
+    targetValue = if (startAnimation) 1f else 0.9f,
+    animationSpec = tween(durationMillis = 1200),
+    label = "TitleScale"
+  )
+
+  val parsedAccent = remember(otaState.accentColorHex) {
+    runCatching {
+      Color(android.graphics.Color.parseColor(otaState.accentColorHex))
+    }.getOrDefault(Color(0xFF10B981))
+  }
+
+  val bgColor = if (isLightMode) Color(0xFFF2FBF7) else Color(0xFF07110E)
+  val subtitleColor = if (isLightMode) Color(0xFF4B6B5D) else Color(0xFF86B8A5)
 
   Box(
     modifier = modifier
@@ -74,59 +113,87 @@ fun SplashScreen(
     ) {
       Box(
         modifier = Modifier
-          .size(80.dp)
-          .shadow(12.dp, RoundedCornerShape(20.dp), spotColor = Color(0x4D0066FF))
-          .clip(RoundedCornerShape(20.dp))
-          .background(Color(0xFF0066FF)),
+          .size(92.dp)
+          .graphicsLayer {
+            scaleX = logoScale
+            scaleY = logoScale
+          }
+          .shadow(18.dp, RoundedCornerShape(24.dp), spotColor = parsedAccent.copy(alpha = 0.55f))
+          .clip(RoundedCornerShape(24.dp))
+          .background(
+            Brush.linearGradient(
+              colors = listOf(parsedAccent, Color(0xFF06B6D4))
+            )
+          ),
         contentAlignment = Alignment.Center
       ) {
         Icon(
           imageVector = Icons.Default.Image,
-          contentDescription = "Rimzim Gallery Logo",
+          contentDescription = "Nomi Gallery Logo",
           tint = Color.White,
-          modifier = Modifier.size(45.dp)
+          modifier = Modifier.size(46.dp)
         )
       }
 
-      Spacer(modifier = Modifier.height(20.dp))
+      Spacer(modifier = Modifier.height(22.dp))
 
       Text(
-        text = "रिमझिम",
-        fontSize = 26.sp,
-        fontWeight = FontWeight.Bold,
-        letterSpacing = 0.5.sp,
-        color = titleColor
-      )
-
-      Spacer(modifier = Modifier.height(6.dp))
-
-      Text(
-        text = "अयाज बलोच (AYAZ BALOCH)",
-        fontSize = 14.sp,
-        fontWeight = FontWeight.Bold,
+        text = otaState.appTitle,
+        fontSize = 30.sp,
+        fontWeight = FontWeight.ExtraBold,
+        letterSpacing = 1.6.sp,
+        textAlign = TextAlign.Center,
         style = TextStyle(
           brush = Brush.linearGradient(
-            colors = listOf(Color(0xFF38BDF8), Color(0xFFC084FC))
+            colors = listOf(Color(0xFF34D399), Color(0xFF22D3EE), Color(0xFFFBBF24))
           )
-        )
+        ),
+        modifier = Modifier.graphicsLayer {
+          alpha = titleAlpha
+          scaleX = titleScale
+          scaleY = titleScale
+        }
       )
 
-      Spacer(modifier = Modifier.height(4.dp))
+      Spacer(modifier = Modifier.height(8.dp))
 
       Text(
-        text = "Nova Gallery",
-        fontSize = 12.sp,
-        fontWeight = FontWeight.Medium,
-        color = subtitleColor
+        text = otaState.splashSubtitle,
+        fontSize = 13.sp,
+        fontWeight = FontWeight.SemiBold,
+        color = subtitleColor,
+        modifier = Modifier.graphicsLayer { alpha = titleAlpha }
       )
 
-      Spacer(modifier = Modifier.height(30.dp))
+      Spacer(modifier = Modifier.height(10.dp))
+
+      val statusLabel = when (otaState.status) {
+        OtaSyncStatus.CHECKING, OtaSyncStatus.SYNCING -> "Syncing GitHub Live Config..."
+        OtaSyncStatus.UPDATED -> "v${otaState.version} • Remote Config Applied"
+        OtaSyncStatus.OFFLINE -> "v${otaState.version} • Cached Mode"
+      }
+      Surface(
+        color = parsedAccent.copy(alpha = 0.14f),
+        shape = RoundedCornerShape(20.dp),
+        border = BorderStroke(1.dp, parsedAccent.copy(alpha = 0.35f)),
+        modifier = Modifier.graphicsLayer { alpha = titleAlpha }
+      ) {
+        Text(
+          text = statusLabel,
+          fontSize = 11.sp,
+          fontWeight = FontWeight.Medium,
+          color = parsedAccent,
+          modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+        )
+      }
+
+      Spacer(modifier = Modifier.height(28.dp))
 
       CircularProgressIndicator(
-        modifier = Modifier.size(32.dp),
-        color = Color(0xFF0066FF),
+        modifier = Modifier.size(34.dp),
+        color = parsedAccent,
         strokeWidth = 3.dp,
-        trackColor = if (isLightMode) Color(0xFFE5E7EB) else Color(0xFF1A2230)
+        trackColor = if (isLightMode) Color(0xFFD1FAE5) else Color(0xFF0F1F1A)
       )
     }
   }
@@ -148,63 +215,58 @@ fun PermissionScreen(
     horizontalAlignment = Alignment.CenterHorizontally,
     verticalArrangement = Arrangement.SpaceBetween
   ) {
-    // Upper Content (.permission-content)
     Column(
       modifier = Modifier
         .fillMaxWidth()
         .padding(top = 60.dp),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
-      // Permission Icon Container (.permission-icon: 90x90px, circular #eef4ff)
       Box(
         modifier = Modifier
           .size(90.dp)
           .clip(CircleShape)
-          .background(Color(0xFFEEF4FF)),
+          .background(Color(0xFFD1FAE5)),
         contentAlignment = Alignment.Center
       ) {
         Icon(
           imageVector = Icons.Default.Security,
           contentDescription = "Storage Access",
-          tint = Color(0xFF0066FF),
+          tint = Color(0xFF059669),
           modifier = Modifier.size(45.dp)
         )
       }
 
       Spacer(modifier = Modifier.height(24.dp))
 
-      // Title (.permission-title: 22px, bold)
       Text(
         text = "Allow Storage Access",
         fontSize = 22.sp,
         fontWeight = FontWeight.Bold,
-        color = Color(0xFF1A1A1A),
+        color = Color(0xFF0B1F17),
         textAlign = TextAlign.Center
       )
 
       Spacer(modifier = Modifier.height(12.dp))
 
-      // Description (.permission-desc: 14px, line-height 1.5, max-width 300px)
       Text(
-        text = "Nova Gallery needs access to your device storage to scan and display all your photos and videos cleanly.",
+        text = "Nomi Gallery needs access to your device storage to scan and display all your photos and videos cleanly.",
         fontSize = 14.sp,
-        color = Color(0xFF666666),
+        color = Color(0xFF4B6B5D),
         lineHeight = 21.sp,
         textAlign = TextAlign.Center,
         modifier = Modifier.padding(horizontal = 16.dp)
       )
     }
 
-    // Bottom Action Button (.permission-btn)
     Button(
       onClick = onAllowClicked,
       modifier = Modifier
         .fillMaxWidth()
         .height(56.dp)
-        .shadow(8.dp, RoundedCornerShape(12.dp), spotColor = Color(0x4D0066FF))
+        .shadow(8.dp, RoundedCornerShape(12.dp), spotColor = Color(0x4D10B981))
         .testTag("permission_allow_button"),
       colors = ButtonDefaults.buttonColors(
-        containerColor = Color(0xFF0066FF),
+        containerColor = Color(0xFF10B981),
         contentColor = Color.White
       ),
       shape = RoundedCornerShape(12.dp)

@@ -133,11 +133,13 @@ enum class AppStage {
 fun AegisGalleryApp(viewModel: GalleryViewModel) {
   var appStage by remember { mutableStateOf(AppStage.SPLASH) }
   val lifecycleOwner = LocalLifecycleOwner.current
+  val otaState by viewModel.otaState.collectAsState()
+  val isLightMode by viewModel.isLightMode.collectAsState()
 
   DisposableEffect(lifecycleOwner) {
     val observer = LifecycleEventObserver { _, event ->
       if (event == Lifecycle.Event.ON_START) {
-        viewModel.refreshRemoteConfigInBackground()
+        viewModel.refreshRemoteConfigInBackground(force = true)
       }
     }
     lifecycleOwner.lifecycle.addObserver(observer)
@@ -149,7 +151,8 @@ fun AegisGalleryApp(viewModel: GalleryViewModel) {
   when (appStage) {
     AppStage.SPLASH -> {
       SplashScreen(
-        isLightMode = viewModel.isLightMode.collectAsState().value,
+        otaState = otaState,
+        isLightMode = isLightMode,
         onTimeout = { appStage = AppStage.MAIN }
       )
     }
@@ -348,8 +351,8 @@ fun NovaGalleryMainContent(viewModel: GalleryViewModel) {
               modifier = Modifier.padding(24.dp)
             ) {
               Text(
-                text = "रिमझिम",
-                fontSize = 18.sp,
+                text = "Nomi Gallery",
+                fontSize = 19.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
                 textAlign = TextAlign.Center
@@ -358,7 +361,7 @@ fun NovaGalleryMainContent(viewModel: GalleryViewModel) {
               Text(
                 text = "स्टोरेज की परमिशन दें ताकि आपके फोटो और वीडियो ऑटोमैटिक स्कैन हो सकें।",
                 fontSize = 13.sp,
-                color = Color(0xFFA0AEC0),
+                color = Color(0xFF94D3BE),
                 lineHeight = 19.sp,
                 textAlign = TextAlign.Center
               )
@@ -367,7 +370,7 @@ fun NovaGalleryMainContent(viewModel: GalleryViewModel) {
                 onClick = { viewModel.performStorageScan() },
                 shape = RoundedCornerShape(20.dp),
                 colors = ButtonDefaults.buttonColors(
-                  containerColor = Color(0xFF0066FF),
+                  containerColor = Color(0xFF10B981),
                   contentColor = Color.White
                 ),
                 contentPadding = PaddingValues(horizontal = 24.dp, vertical = 10.dp),

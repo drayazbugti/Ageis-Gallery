@@ -15,35 +15,35 @@ val NeonEmerald = Color(0xFF10B981)
 val CoralAlert = Color(0xFFEF4444)
 val AmberWarning = Color(0xFFF59E0B)
 
-// Nova Gallery Clean Palette (Matching latest mockup)
-// Light Mode (#f5f6fa)
-val NovaLightBg = Color(0xFFF5F6FA) // --bg-color: #f5f6fa
-val NovaLightText = Color(0xFF111111) // --text-color: #111111
-val NovaLightCardBg = Color(0xFFFFFFFF) // --card-bg: #ffffff
-val NovaLightCardBorder = Color(0xFFE5E7EB)
-val NovaLightAccent = Color(0xFF0066FF)
-val NovaLightSubtext = Color(0xFF666666) // --subtext-color: #666666
+// Nomi Gallery v6.0 Emerald-Slate Palette (Fresh Visual Theme)
+// Light Mode (#f2fbf7)
+val NovaLightBg = Color(0xFFF2FBF7) // Crisp mint-white backdrop
+val NovaLightText = Color(0xFF0B1F17) // Deep emerald charcoal
+val NovaLightCardBg = Color(0xFFFFFFFF)
+val NovaLightCardBorder = Color(0xFFD1FAE5)
+val NovaLightAccent = Color(0xFF059669) // Vivid Emerald
+val NovaLightSubtext = Color(0xFF4B6B5D)
 val NovaLightGlassBg = Color(0xEBFFFFFF)
 
-// Dark Mode (#0b0f15 Main Interface)
-val NovaDarkOuterBg = Color(0xFF0B0F15)
-val NovaDarkBg = Color(0xFF0B0F15) // --bg-color: #0b0f15
-val NovaDarkText = Color(0xFFFFFFFF) // --text-color: #ffffff
-val NovaDarkCardBg = Color(0xFF151B26) // --card-bg: #151b26
-val NovaDarkCardBorder = Color(0x1AFFFFFF) // rgba(255, 255, 255, 0.1)
-val NovaDarkAccent = Color(0xFF0066FF)
-val NovaDarkSubtext = Color(0xFF8C96A5) // --subtext-color: #8c96a5
-val NovaDarkGlassBg = Color(0xBF191E28) // rgba(25, 30, 40, 0.75)
-val NovaDarkTileBg = Color(0xFF1A2230)
+// Dark Mode (#07110E Deep Emerald-Slate Interface)
+val NovaDarkOuterBg = Color(0xFF07110E)
+val NovaDarkBg = Color(0xFF07110E)
+val NovaDarkText = Color(0xFFF0FDF9)
+val NovaDarkCardBg = Color(0xFF0F1F1A)
+val NovaDarkCardBorder = Color(0x2610B981) // Subtle emerald glass border
+val NovaDarkAccent = Color(0xFF10B981) // Emerald Glow
+val NovaDarkSubtext = Color(0xFF86B8A5)
+val NovaDarkGlassBg = Color(0xCC0D1D18)
+val NovaDarkTileBg = Color(0xFF132620)
 
 // PRO Badge Gradient
-val NovaProGoldStart = Color(0xFFD4AF37)
-val NovaProGoldEnd = Color(0xFFAA771C)
+val NovaProGoldStart = Color(0xFF34D399)
+val NovaProGoldEnd = Color(0xFF059669)
 
 // Gradient tokens for App Icon
-val NovaGradientStart = Color(0xFF00C6FF)
-val NovaGradientEnd = Color(0xFF0072FF)
-val NovaDeleteRed = Color(0xFFDC3545)
+val NovaGradientStart = Color(0xFF10B981)
+val NovaGradientEnd = Color(0xFF06B6D4)
+val NovaDeleteRed = Color(0xFFEF4444)
 
 // Backwards compatibility aliases
 val AgsCleanLightBg = NovaLightBg

@@ -1,12 +1,13 @@
 {
-  "version": "3.4",
-  "appTitle": "रिमझिम",
-  "announcementTitle": "Auto-Sync Active",
-  "announcementBody": "Remote features, title & announcements update seamlessly in the background on launch.",
-  "accentColor": "#3B82F6",
+  "version": "6.0",
+  "appTitle": "Nomi Gallery",
+  "splashSubtitle": "Live Sync v6.0 • Ayaz Baloch",
+  "announcementTitle": "Nomi Gallery v6.0 Live",
+  "announcementBody": "Aggressive no-cache GitHub OTA sync active. Visual theme, branding, and feature modules update automatically on launch.",
+  "accentColor": "#10B981",
   "featureBadges": [
-    "Zero-Click Auto Update",
-    "Auto-Scan Storage",
-    "Persistent Trash & Vault"
+    "Nomi Gallery v6.0",
+    "No-Cache Live Sync",
+    "Emerald Theme & Auto-Scan"
   ]
 }

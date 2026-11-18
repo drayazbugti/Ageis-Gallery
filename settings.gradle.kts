@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "Aegis Gallery"
+rootProject.name = "Nomi Gallery"
 
 include(":app")

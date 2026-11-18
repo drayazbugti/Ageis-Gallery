@@ -405,7 +405,7 @@ class VideoPlaybackService : Service() {
     )
 
     return NotificationCompat.Builder(this, CHANNEL_ID)
-      .setContentTitle(item?.title ?: "Nova Gallery Video")
+      .setContentTitle(item?.title ?: "Nomi Gallery Video")
       .setContentText(if (isPlaying) "Playing audio in background" else "Audio playback paused")
       .setSmallIcon(android.R.drawable.ic_media_play)
       .setContentIntent(contentPendingIntent)
@@ -432,10 +432,10 @@ class VideoPlaybackService : Service() {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       val channel = NotificationChannel(
         CHANNEL_ID,
-        "Nova Video Playback",
+        "Nomi Video Playback",
         NotificationManager.IMPORTANCE_LOW
       ).apply {
-        description = "Background audio playback notifications for Nova Gallery"
+        description = "Background audio playback notifications for Nomi Gallery"
         setShowBadge(false)
       }
       val nm = getSystemService(NotificationManager::class.java)

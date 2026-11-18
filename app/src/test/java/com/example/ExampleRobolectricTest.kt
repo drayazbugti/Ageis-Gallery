@@ -19,7 +19,7 @@ class ExampleRobolectricTest {
   fun `read string from context`() {
     val context = ApplicationProvider.getApplicationContext<Context>()
     val appName = context.getString(R.string.app_name)
-    assertEquals("Nova Gallery", appName)
+    assertEquals("Nomi Gallery", appName)
   }
 
   @Test
@@ -79,25 +79,34 @@ class ExampleRobolectricTest {
   }
 
   @Test
-  fun `test automatic remote config json parsing`() {
+  fun `test automatic remote config v6 json parsing and stale cache invalidation`() {
     val context = ApplicationProvider.getApplicationContext<Context>()
+    val legacyPrefs = context.getSharedPreferences("nova_ota_prefs", Context.MODE_PRIVATE)
+    legacyPrefs.edit().putString("ota_last_config_json", """{"version":"3.3","appTitle":"Nova Gallery"}""").commit()
+
     val manager = com.example.ota.OtaConfigManager(context)
+    val initialState = manager.loadCachedState()
+    assertEquals("6.0", initialState.version)
+    assertEquals("Nomi Gallery", initialState.appTitle)
+
     val sampleJson = """
       {
-        "version": "3.4",
-        "appTitle": "रिमझिम",
-        "announcementTitle": "Auto-Sync Active",
+        "version": "6.0",
+        "appTitle": "Nomi Gallery",
+        "splashSubtitle": "Live Sync v6.0 • Ayaz Baloch",
+        "announcementTitle": "Nomi Gallery v6.0 Live",
         "announcementBody": "Updated seamlessly in background.",
-        "accentColor": "#38BDF8",
-        "featureBadges": ["Zero-Click", "Auto-Sync"]
+        "accentColor": "#10B981",
+        "featureBadges": ["Nomi Gallery v6.0", "No-Cache Live Sync"]
       }
     """.trimIndent()
     val state = manager.parseConfigJson(sampleJson, com.example.ota.OtaSyncStatus.UPDATED, 123456L)
-    assertEquals("3.4", state.version)
-    assertEquals("रिमझिम", state.appTitle)
-    assertEquals("Auto-Sync Active", state.announcementTitle)
-    assertEquals("#38BDF8", state.accentColorHex)
-    assertEquals(listOf("Zero-Click", "Auto-Sync"), state.featureBadges)
+    assertEquals("6.0", state.version)
+    assertEquals("Nomi Gallery", state.appTitle)
+    assertEquals("Live Sync v6.0 • Ayaz Baloch", state.splashSubtitle)
+    assertEquals("Nomi Gallery v6.0 Live", state.announcementTitle)
+    assertEquals("#10B981", state.accentColorHex)
+    assertEquals(listOf("Nomi Gallery v6.0", "No-Cache Live Sync"), state.featureBadges)
     assertEquals(com.example.ota.OtaSyncStatus.UPDATED, state.status)
   }
 }

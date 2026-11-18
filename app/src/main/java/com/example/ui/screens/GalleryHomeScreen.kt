@@ -156,7 +156,7 @@ fun GalleryHomeScreen(
         val fileName = "Media_${System.currentTimeMillis() % 10000}_$idx"
         viewModel.importMedia(uri.toString(), isVideo = isVideo, title = fileName, album = selectedAlbum ?: "Camera")
       }
-      Toast.makeText(context, "${uris.size} item(s) added to रिमझिम", Toast.LENGTH_SHORT).show()
+      Toast.makeText(context, "${uris.size} item(s) added to Nomi Gallery", Toast.LENGTH_SHORT).show()
     }
   }
 
@@ -177,11 +177,11 @@ fun GalleryHomeScreen(
   val subtextColor = if (isLightMode) NovaLightSubtext else NovaDarkSubtext
   val cardBg = if (isLightMode) NovaLightCardBg else NovaDarkCardBg
   val cardBorder = if (isLightMode) NovaLightCardBorder else NovaDarkCardBorder
-  val tileBg = if (isLightMode) Color(0xFFE2E8F0) else NovaDarkTileBg
+  val tileBg = if (isLightMode) Color(0xFFD1FAE5) else NovaDarkTileBg
   val accentColor = remember(otaState.accentColorHex) {
     runCatching {
-      otaState.accentColorHex?.let { Color(android.graphics.Color.parseColor(it)) }
-    }.getOrNull() ?: Color(0xFF0066FF)
+      Color(android.graphics.Color.parseColor(otaState.accentColorHex))
+    }.getOrDefault(Color(0xFF10B981))
   }
 
   // Group timeline media into date sections ("Today", "Yesterday", "Nov 10") or sort group
@@ -368,46 +368,58 @@ fun GalleryHomeScreen(
           }
           Column {
             Text(
-              text = selectedAlbum ?: otaState.appTitle ?: "रिमझिम",
-              fontSize = 24.sp,
-              fontWeight = FontWeight.Bold,
-              color = textColor,
+              text = selectedAlbum ?: otaState.appTitle,
+              fontSize = 23.sp,
+              fontWeight = FontWeight.ExtraBold,
+              letterSpacing = 0.6.sp,
+              color = if (selectedAlbum != null) textColor else accentColor,
               modifier = Modifier.testTag("header_gallery_title")
             )
             Text(
-              text = "अयाज बलोच (AYAZ BALOCH) • Nova Gallery",
+              text = otaState.splashSubtitle,
               fontSize = 11.sp,
               fontWeight = FontWeight.SemiBold,
               style = TextStyle(
                 brush = Brush.linearGradient(
-                  colors = listOf(Color(0xFF38BDF8), Color(0xFFC084FC))
+                  colors = listOf(Color(0xFF34D399), Color(0xFF22D3EE))
                 )
               ),
               maxLines = 1,
               overflow = TextOverflow.Ellipsis
             )
-            // Passive Automatic Background Sync Status Badge (no manual click/popup)
+            // Passive Automatic Background Sync Status + Live Media Count Badge
             val (otaBadgeColor, otaBadgeText) = when (otaState.status) {
               OtaSyncStatus.CHECKING -> Color(0xFF34D399) to "Auto-Checking..."
-              OtaSyncStatus.SYNCING -> Color(0xFF34D399) to "Updating..."
-              OtaSyncStatus.UPDATED -> Color(0xFF60A5FA) to "Version ${otaState.version} (Live)"
-              OtaSyncStatus.OFFLINE -> Color(0xFFF87171) to "Offline Mode"
+              OtaSyncStatus.SYNCING -> Color(0xFF22D3EE) to "Syncing v${otaState.version}..."
+              OtaSyncStatus.UPDATED -> accentColor to "v${otaState.version} (Live)"
+              OtaSyncStatus.OFFLINE -> Color(0xFFF59E0B) to "v${otaState.version} (Cached)"
             }
-            Surface(
-              color = otaBadgeColor.copy(alpha = 0.16f),
-              shape = RoundedCornerShape(20.dp),
-              border = BorderStroke(1.dp, otaBadgeColor.copy(alpha = 0.35f)),
-              modifier = Modifier
-                .padding(top = 4.dp)
-                .clip(RoundedCornerShape(20.dp))
-                .testTag("ota_status_pill")
+            Row(
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.spacedBy(6.dp),
+              modifier = Modifier.padding(top = 4.dp)
             ) {
+              Surface(
+                color = otaBadgeColor.copy(alpha = 0.16f),
+                shape = RoundedCornerShape(20.dp),
+                border = BorderStroke(1.dp, otaBadgeColor.copy(alpha = 0.35f)),
+                modifier = Modifier
+                  .clip(RoundedCornerShape(20.dp))
+                  .testTag("ota_status_pill")
+              ) {
+                Text(
+                  text = otaBadgeText,
+                  fontSize = 10.sp,
+                  fontWeight = FontWeight.SemiBold,
+                  color = otaBadgeColor,
+                  modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                )
+              }
               Text(
-                text = otaBadgeText,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = otaBadgeColor,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                text = if (isScanningNow) "Scanning..." else "${filteredMedia.size} items loaded",
+                fontSize = 11.sp,
+                color = subtextColor,
+                modifier = Modifier.testTag("media_count_label")
               )
             }
           }
@@ -662,9 +674,9 @@ fun GalleryHomeScreen(
         contentAlignment = Alignment.Center
       ) {
         Surface(
-          color = if (isLightMode) Color.White else Color(0xFF1E293B),
+          color = if (isLightMode) Color(0xFFECFDF5) else Color(0x2610B981),
           shape = RoundedCornerShape(14.dp),
-          border = BorderStroke(1.dp, Color(0xFF38BDF8).copy(alpha = 0.45f)),
+          border = BorderStroke(1.dp, accentColor.copy(alpha = 0.4f)),
           modifier = Modifier
             .fillMaxWidth()
             .testTag("inline_permission_banner")
@@ -674,7 +686,7 @@ fun GalleryHomeScreen(
             modifier = Modifier.padding(18.dp)
           ) {
             Text(
-              text = "📁 ऑटोमैटिक मीडिया स्कैन के लिए स्टोरेज परमिशन दें:",
+              text = "Storage permission required to scan device photos & videos automatically.",
               fontSize = 14.sp,
               color = textColor,
               textAlign = TextAlign.Center
@@ -684,13 +696,13 @@ fun GalleryHomeScreen(
               onClick = { viewModel.performStorageScan() },
               shape = RoundedCornerShape(8.dp),
               colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF0284C7),
+                containerColor = accentColor,
                 contentColor = Color.White
               ),
               modifier = Modifier.testTag("grant_permission_rescan_btn")
             ) {
               Text(
-                text = "Grant Permission & Rescan",
+                text = "Grant Permission & Scan",
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 13.sp
               )
@@ -820,7 +832,7 @@ fun GalleryHomeScreen(
           ) {
             Text("PRO", fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, color = Color.Black)
           }
-          Text("Nova Gallery Pro Tools", fontWeight = FontWeight.Bold, color = textColor, fontSize = 17.sp)
+          Text("${otaState.appTitle} Pro Tools", fontWeight = FontWeight.Bold, color = textColor, fontSize = 17.sp)
         }
       },
       text = {
