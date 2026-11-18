@@ -99,7 +99,11 @@ class MainActivity : ComponentActivity() {
     setContent {
       val viewModel: GalleryViewModel = viewModel()
       val isLightMode by viewModel.isLightMode.collectAsState()
-      MyApplicationTheme(darkTheme = !isLightMode) {
+      val otaState by viewModel.otaState.collectAsState()
+      MyApplicationTheme(
+        darkTheme = !isLightMode,
+        remoteAccentColorHex = otaState.accentColorHex
+      ) {
         AegisGalleryApp(viewModel = viewModel)
       }
     }
@@ -351,7 +355,7 @@ fun NovaGalleryMainContent(viewModel: GalleryViewModel) {
               modifier = Modifier.padding(24.dp)
             ) {
               Text(
-                text = "Nomi Gallery",
+                text = "Ayaz Gallery",
                 fontSize = 19.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
@@ -359,7 +363,7 @@ fun NovaGalleryMainContent(viewModel: GalleryViewModel) {
               )
               Spacer(modifier = Modifier.height(12.dp))
               Text(
-                text = "स्टोरेज की परमिशन दें ताकि आपके फोटो और वीडियो ऑटोमैटिक स्कैन हो सकें।",
+                text = "Grant storage access to automatically scan and display your device photos and videos.",
                 fontSize = 13.sp,
                 color = Color(0xFF94D3BE),
                 lineHeight = 19.sp,

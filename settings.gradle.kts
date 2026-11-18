@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "Nomi Gallery"
+rootProject.name = "Ayaz Gallery"
 
 include(":app")

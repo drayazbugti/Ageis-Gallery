@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.example.security.AuthResult
 import com.example.security.VaultSecurityManager
+import kotlinx.coroutines.flow.first
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -19,7 +20,7 @@ class ExampleRobolectricTest {
   fun `read string from context`() {
     val context = ApplicationProvider.getApplicationContext<Context>()
     val appName = context.getString(R.string.app_name)
-    assertEquals("Nomi Gallery", appName)
+    assertEquals("Ayaz Gallery", appName)
   }
 
   @Test
@@ -79,34 +80,43 @@ class ExampleRobolectricTest {
   }
 
   @Test
-  fun `test automatic remote config v6 json parsing and stale cache invalidation`() {
-    val context = ApplicationProvider.getApplicationContext<Context>()
-    val legacyPrefs = context.getSharedPreferences("nova_ota_prefs", Context.MODE_PRIVATE)
-    legacyPrefs.edit().putString("ota_last_config_json", """{"version":"3.3","appTitle":"Nova Gallery"}""").commit()
+  fun `test datastore ota update and 6 hour workmanager schedule`() {
+    kotlinx.coroutines.runBlocking {
+      val context = ApplicationProvider.getApplicationContext<Context>()
+      androidx.work.testing.WorkManagerTestInitHelper.initializeTestWorkManager(context)
 
-    val manager = com.example.ota.OtaConfigManager(context)
-    val initialState = manager.loadCachedState()
-    assertEquals("6.0", initialState.version)
-    assertEquals("Nomi Gallery", initialState.appTitle)
+      // 1. Verify WorkManager schedules the 6-hour periodic OTA task with CONNECTED constraint
+      com.example.ota.OtaWorkScheduler.schedulePeriodicSync(context)
+      val workInfos = androidx.work.WorkManager.getInstance(context)
+        .getWorkInfosForUniqueWork(com.example.ota.OtaWorkScheduler.PERIODIC_WORK_NAME)
+        .get()
+      assertTrue(workInfos.isNotEmpty())
+      assertEquals(androidx.work.WorkInfo.State.ENQUEUED, workInfos.first().state)
 
-    val sampleJson = """
-      {
-        "version": "6.0",
-        "appTitle": "Nomi Gallery",
-        "splashSubtitle": "Live Sync v6.0 • Ayaz Baloch",
-        "announcementTitle": "Nomi Gallery v6.0 Live",
-        "announcementBody": "Updated seamlessly in background.",
-        "accentColor": "#10B981",
-        "featureBadges": ["Nomi Gallery v6.0", "No-Cache Live Sync"]
-      }
-    """.trimIndent()
-    val state = manager.parseConfigJson(sampleJson, com.example.ota.OtaSyncStatus.UPDATED, 123456L)
-    assertEquals("6.0", state.version)
-    assertEquals("Nomi Gallery", state.appTitle)
-    assertEquals("Live Sync v6.0 • Ayaz Baloch", state.splashSubtitle)
-    assertEquals("Nomi Gallery v6.0 Live", state.announcementTitle)
-    assertEquals("#10B981", state.accentColorHex)
-    assertEquals(listOf("Nomi Gallery v6.0", "No-Cache Live Sync"), state.featureBadges)
-    assertEquals(com.example.ota.OtaSyncStatus.UPDATED, state.status)
+      // 2. Verify DataStore parses and emits real-time branding & theme changes
+      val manager = com.example.ota.OtaConfigManager(context)
+      manager.clearLegacyCachesIfNeeded()
+      val sampleJson = """
+        {
+          "version": "6.1",
+          "appTitle": "Ayaz Gallery",
+          "splashSubtitle": "WorkManager 6h Sync • Ayaz Baloch",
+          "announcementTitle": "Ayaz Gallery Live Sync",
+          "announcementBody": "Real-time theme & branding from DataStore.",
+          "accentColor": "#22D3EE",
+          "themeMode": "light",
+          "featureBadges": ["Ayaz Gallery", "6h WorkManager OTA"]
+        }
+      """.trimIndent()
+      manager.applyRemoteJsonToDataStore(sampleJson, "https://example.com/ota-config.json")
+      val emitted = manager.otaStateFlow.first()
+      assertEquals("6.1", emitted.version)
+      assertEquals("Ayaz Gallery", emitted.appTitle)
+      assertEquals("WorkManager 6h Sync • Ayaz Baloch", emitted.splashSubtitle)
+      assertEquals("#22D3EE", emitted.accentColorHex)
+      assertEquals("light", emitted.remoteThemeMode)
+      assertEquals(listOf("Ayaz Gallery", "6h WorkManager OTA"), emitted.featureBadges)
+      assertEquals(com.example.ota.OtaSyncStatus.UPDATED, emitted.status)
+    }
   }
 }

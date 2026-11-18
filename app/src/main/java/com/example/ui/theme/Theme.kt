@@ -57,13 +57,22 @@ private val LightColorScheme =
 
 @Composable
 fun MyApplicationTheme(
-  darkTheme: Boolean = false, // Default to AGS Clean Light Mode (#f8f9fa)
+  darkTheme: Boolean = false,
   dynamicColor: Boolean = false,
+  remoteAccentColorHex: String? = null,
   content: @Composable () -> Unit,
 ) {
-  val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
-
-
+  val parsedAccent = androidx.compose.runtime.remember(remoteAccentColorHex) {
+    remoteAccentColorHex?.let {
+      runCatching { Color(android.graphics.Color.parseColor(it)) }.getOrNull()
+    }
+  }
+  val baseScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+  val colorScheme = if (parsedAccent != null) {
+    baseScheme.copy(primary = parsedAccent)
+  } else {
+    baseScheme
+  }
 
   MaterialTheme(
     colorScheme = colorScheme,

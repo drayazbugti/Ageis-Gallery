@@ -1,13 +1,14 @@
 {
-  "version": "6.0",
-  "appTitle": "Nomi Gallery",
-  "splashSubtitle": "Live Sync v6.0 • Ayaz Baloch",
-  "announcementTitle": "Nomi Gallery v6.0 Live",
-  "announcementBody": "Aggressive no-cache GitHub OTA sync active. Visual theme, branding, and feature modules update automatically on launch.",
+  "version": "6.1",
+  "appTitle": "Ayaz Gallery",
+  "splashSubtitle": "WorkManager 6h Sync • Ayaz Baloch",
+  "announcementTitle": "Ayaz Gallery Live Sync",
+  "announcementBody": "Background WorkManager checks GitHub every 6 hours and streams theme & branding updates live via DataStore.",
   "accentColor": "#10B981",
+  "themeMode": "dark",
   "featureBadges": [
-    "Nomi Gallery v6.0",
-    "No-Cache Live Sync",
-    "Emerald Theme & Auto-Scan"
+    "Ayaz Gallery",
+    "6h WorkManager OTA",
+    "DataStore Real-Time UI"
   ]
 }

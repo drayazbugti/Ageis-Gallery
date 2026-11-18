@@ -6,6 +6,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -13,6 +14,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -72,6 +75,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
@@ -156,7 +160,7 @@ fun GalleryHomeScreen(
         val fileName = "Media_${System.currentTimeMillis() % 10000}_$idx"
         viewModel.importMedia(uri.toString(), isVideo = isVideo, title = fileName, album = selectedAlbum ?: "Camera")
       }
-      Toast.makeText(context, "${uris.size} item(s) added to Nomi Gallery", Toast.LENGTH_SHORT).show()
+      Toast.makeText(context, "${uris.size} item(s) added to Ayaz Gallery", Toast.LENGTH_SHORT).show()
     }
   }
 
@@ -658,7 +662,7 @@ fun GalleryHomeScreen(
           CircularProgressIndicator(color = accentColor, modifier = Modifier.size(38.dp))
           Spacer(modifier = Modifier.height(14.dp))
           Text(
-            text = "तस्वीरें और वीडियो स्कैन हो रहे हैं...",
+            text = "Scanning photos and videos...",
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
             color = subtextColor,
@@ -726,7 +730,7 @@ fun GalleryHomeScreen(
           )
           Spacer(modifier = Modifier.height(12.dp))
           Text(
-            text = if (searchQuery.isNotBlank()) "No matching media found" else "कोई फोटो या वीडियो नहीं मिला।",
+            text = if (searchQuery.isNotBlank()) "No matching media found" else "No photos or videos found.",
             fontSize = 15.sp,
             fontWeight = FontWeight.SemiBold,
             color = subtextColor,
@@ -756,8 +760,8 @@ fun GalleryHomeScreen(
         modifier = Modifier
           .fillMaxSize()
           .testTag("photos_timeline_list"),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 110.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 110.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
       ) {
         itemsIndexed(
           items = timelineRows,
@@ -767,29 +771,21 @@ fun GalleryHomeScreen(
             Text(
               text = row.sectionTitle,
               fontSize = 13.sp,
-              fontWeight = FontWeight.Medium,
+              fontWeight = FontWeight.SemiBold,
               color = subtextColor,
-              modifier = Modifier.padding(top = 12.dp, bottom = 6.dp)
+              modifier = Modifier.padding(top = 10.dp, bottom = 4.dp, start = 4.dp)
             )
           }
 
-          val rowShape: Shape = when {
-            row.isFirstRowInSection && row.isLastRowInSection -> RoundedCornerShape(8.dp)
-            row.isFirstRowInSection -> RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)
-            row.isLastRowInSection -> RoundedCornerShape(bottomStart = 8.dp, bottomEnd = 8.dp)
-            else -> RoundedCornerShape(0.dp)
-          }
-
           Row(
-            modifier = Modifier
-              .fillMaxWidth()
-              .clip(rowShape),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
           ) {
             row.items.forEach { mediaItem ->
               TimelineSquareTile(
                 item = mediaItem,
                 tileBg = tileBg,
+                isLightMode = isLightMode,
                 isSelected = selectedIds.contains(mediaItem.id),
                 isSelectionMode = isSelectionMode,
                 accentColor = accentColor,
@@ -889,6 +885,7 @@ fun GalleryHomeScreen(
 private fun TimelineSquareTile(
   item: MediaItem,
   tileBg: Color,
+  isLightMode: Boolean,
   isSelected: Boolean,
   isSelectionMode: Boolean,
   accentColor: Color,
@@ -898,6 +895,16 @@ private fun TimelineSquareTile(
   modifier: Modifier = Modifier
 ) {
   val context = LocalContext.current
+  val interactionSource = remember { MutableInteractionSource() }
+  val isPressed by interactionSource.collectIsPressedAsState()
+  val pressScale by animateFloatAsState(
+    targetValue = if (isPressed) 0.96f else 1f,
+    label = "TileScale"
+  )
+  val tileShape = RoundedCornerShape(16.dp)
+  val borderColor = if (isSelected) Color(0xFF34D399) else accentColor
+  val borderWidth = if (isSelected) 2.5.dp else 1.5.dp
+
   val colorFilter = when (item.filterApplied) {
     "MONO" -> ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) })
     "SEPIA" -> ColorFilter.colorMatrix(ColorMatrix(floatArrayOf(
@@ -913,11 +920,28 @@ private fun TimelineSquareTile(
   Box(
     modifier = modifier
       .aspectRatio(1f)
-      .background(tileBg)
-      .then(
-        if (isSelected) Modifier.border(2.5.dp, accentColor) else Modifier
+      .graphicsLayer {
+        scaleX = pressScale
+        scaleY = pressScale
+      }
+      .shadow(
+        elevation = 6.dp,
+        shape = tileShape,
+        spotColor = accentColor.copy(alpha = 0.28f),
+        ambientColor = accentColor.copy(alpha = 0.18f)
       )
+      .clip(tileShape)
+      .background(
+        if (isLightMode) {
+          Brush.linearGradient(listOf(tileBg, Color.White))
+        } else {
+          Brush.linearGradient(listOf(Color(0xFF1E293B), Color(0xFF0F172A)))
+        }
+      )
+      .border(borderWidth, borderColor, tileShape)
       .combinedClickable(
+        interactionSource = interactionSource,
+        indication = null,
         onClick = onClick,
         onLongClick = onLongClick
       )

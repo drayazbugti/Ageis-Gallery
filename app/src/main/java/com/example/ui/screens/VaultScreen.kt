@@ -291,7 +291,7 @@ fun VaultLockView(
     }
     Spacer(modifier = Modifier.height(8.dp))
     Text(
-      text = "Nomi Protected Vault",
+      text = "Ayaz Protected Vault",
       style = MaterialTheme.typography.titleMedium,
       fontWeight = FontWeight.Bold
     )

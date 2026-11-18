@@ -11,6 +11,7 @@ import android.net.ConnectivityManager
 import com.example.ota.OtaConfigManager
 import com.example.ota.OtaSyncStatus
 import com.example.ota.OtaUiState
+import com.example.ota.OtaWorkScheduler
 import com.example.security.AuthResult
 import com.example.security.LockType
 import com.example.security.VaultSecurityManager
@@ -47,21 +48,41 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
   private val otaConfigManager: OtaConfigManager = OtaConfigManager(application)
   private var networkCallback: ConnectivityManager.NetworkCallback? = null
   private var otaFetchJob: kotlinx.coroutines.Job? = null
+  private var lastAppliedRemoteThemeMode: String? = null
 
-  private val _otaState = MutableStateFlow(otaConfigManager.loadCachedState())
-  val otaState: StateFlow<OtaUiState> = _otaState.asStateFlow()
+  // Real-time StateFlow backed directly by Jetpack DataStore Preferences
+  val otaState: StateFlow<OtaUiState> = otaConfigManager.otaStateFlow
+    .stateIn(viewModelScope, SharingStarted.Eagerly, OtaUiState())
 
   init {
     val db = GalleryDatabase.getDatabase(application)
     repository = GalleryRepository(application, db.mediaDao())
     viewModelScope.launch {
+      otaConfigManager.clearLegacyCachesIfNeeded()
       repository.ensureInitialData()
       if (prefs.getBoolean("rimzim_permission_granted", false)) {
         repository.scanDeviceMedia()
       }
     }
+    // Observe DataStore updates in real time to apply remote themeMode automatically
+    viewModelScope.launch {
+      otaState.collect { remote ->
+        val mode = remote.remoteThemeMode
+        if (mode != null && mode != lastAppliedRemoteThemeMode) {
+          lastAppliedRemoteThemeMode = mode
+          val shouldBeLight = (mode == "light")
+          if (_isLightMode.value != shouldBeLight) {
+            setLightMode(shouldBeLight)
+          }
+        }
+      }
+    }
+    // Schedule 6-hour WorkManager periodic check + immediate background sync
+    OtaWorkScheduler.schedulePeriodicSync(application)
+    OtaWorkScheduler.triggerImmediateSync(application)
     refreshRemoteConfigInBackground(force = true)
     networkCallback = otaConfigManager.registerNetworkAvailableCallback {
+      OtaWorkScheduler.triggerImmediateSync(application)
       refreshRemoteConfigInBackground(force = true)
     }
   }
@@ -70,11 +91,8 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
     if (!force && otaFetchJob?.isActive == true) return
     otaFetchJob?.cancel()
     otaFetchJob = viewModelScope.launch {
-      if (_otaState.value.status != OtaSyncStatus.UPDATED) {
-        _otaState.value = _otaState.value.copy(status = OtaSyncStatus.SYNCING)
-      }
-      val result = otaConfigManager.fetchRemoteConfig()
-      _otaState.value = result
+      otaConfigManager.markSyncStatus(OtaSyncStatus.SYNCING)
+      otaConfigManager.fetchRemoteConfig()
     }
   }
 

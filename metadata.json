@@ -1,6 +1,6 @@
 {
-  "name": "Nomi Gallery",
-  "description": "Nomi Gallery — real-time OTA synchronized photo & video gallery with editor, tags, recycle bin, and Safe Vault.",
+  "name": "Ayaz Gallery",
+  "description": "Ayaz Gallery — WorkManager & DataStore live OTA synchronized photo & video gallery with editor, tags, recycle bin, and Safe Vault.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

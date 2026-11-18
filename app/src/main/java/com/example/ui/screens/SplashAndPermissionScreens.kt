@@ -65,7 +65,7 @@ fun SplashScreen(
 
   LaunchedEffect(Unit) {
     startAnimation = true
-    delay(2000L)
+    delay(1800L)
     onTimeout()
   }
 
@@ -82,12 +82,12 @@ fun SplashScreen(
 
   val titleAlpha by animateFloatAsState(
     targetValue = if (startAnimation) 1f else 0f,
-    animationSpec = tween(durationMillis = 1200),
+    animationSpec = tween(durationMillis = 1000),
     label = "TitleAlpha"
   )
   val titleScale by animateFloatAsState(
-    targetValue = if (startAnimation) 1f else 0.9f,
-    animationSpec = tween(durationMillis = 1200),
+    targetValue = if (startAnimation) 1f else 0.95f,
+    animationSpec = tween(durationMillis = 1000),
     label = "TitleScale"
   )
 
@@ -97,8 +97,7 @@ fun SplashScreen(
     }.getOrDefault(Color(0xFF10B981))
   }
 
-  val bgColor = if (isLightMode) Color(0xFFF2FBF7) else Color(0xFF07110E)
-  val subtitleColor = if (isLightMode) Color(0xFF4B6B5D) else Color(0xFF86B8A5)
+  val bgColor = if (isLightMode) Color(0xFFF2FBF7) else Color(0xFF0B0F19)
 
   Box(
     modifier = modifier
@@ -113,39 +112,39 @@ fun SplashScreen(
     ) {
       Box(
         modifier = Modifier
-          .size(92.dp)
+          .size(90.dp)
           .graphicsLayer {
             scaleX = logoScale
             scaleY = logoScale
           }
-          .shadow(18.dp, RoundedCornerShape(24.dp), spotColor = parsedAccent.copy(alpha = 0.55f))
+          .shadow(18.dp, RoundedCornerShape(24.dp), spotColor = Color(0x6610B981))
           .clip(RoundedCornerShape(24.dp))
           .background(
             Brush.linearGradient(
-              colors = listOf(parsedAccent, Color(0xFF06B6D4))
+              colors = listOf(Color(0xFF10B981), Color(0xFF065F46))
             )
           ),
         contentAlignment = Alignment.Center
       ) {
         Icon(
           imageVector = Icons.Default.Image,
-          contentDescription = "Nomi Gallery Logo",
+          contentDescription = "Ayaz Baloch Gallery Logo",
           tint = Color.White,
-          modifier = Modifier.size(46.dp)
+          modifier = Modifier.size(45.dp)
         )
       }
 
-      Spacer(modifier = Modifier.height(22.dp))
+      Spacer(modifier = Modifier.height(20.dp))
 
       Text(
-        text = otaState.appTitle,
-        fontSize = 30.sp,
-        fontWeight = FontWeight.ExtraBold,
-        letterSpacing = 1.6.sp,
+        text = "AYAZ BALOCH",
+        fontSize = 32.sp,
+        fontWeight = FontWeight.Black,
+        letterSpacing = 3.sp,
         textAlign = TextAlign.Center,
         style = TextStyle(
           brush = Brush.linearGradient(
-            colors = listOf(Color(0xFF34D399), Color(0xFF22D3EE), Color(0xFFFBBF24))
+            colors = listOf(Color(0xFF34D399), Color(0xFF60A5FA))
           )
         ),
         modifier = Modifier.graphicsLayer {
@@ -155,22 +154,12 @@ fun SplashScreen(
         }
       )
 
-      Spacer(modifier = Modifier.height(8.dp))
-
-      Text(
-        text = otaState.splashSubtitle,
-        fontSize = 13.sp,
-        fontWeight = FontWeight.SemiBold,
-        color = subtitleColor,
-        modifier = Modifier.graphicsLayer { alpha = titleAlpha }
-      )
-
       Spacer(modifier = Modifier.height(10.dp))
 
       val statusLabel = when (otaState.status) {
-        OtaSyncStatus.CHECKING, OtaSyncStatus.SYNCING -> "Syncing GitHub Live Config..."
-        OtaSyncStatus.UPDATED -> "v${otaState.version} • Remote Config Applied"
-        OtaSyncStatus.OFFLINE -> "v${otaState.version} • Cached Mode"
+        OtaSyncStatus.CHECKING, OtaSyncStatus.SYNCING -> "${otaState.appTitle} • Syncing..."
+        OtaSyncStatus.UPDATED -> "${otaState.appTitle} • v${otaState.version} Live"
+        OtaSyncStatus.OFFLINE -> "${otaState.appTitle} • v${otaState.version}"
       }
       Surface(
         color = parsedAccent.copy(alpha = 0.14f),
@@ -181,19 +170,19 @@ fun SplashScreen(
         Text(
           text = statusLabel,
           fontSize = 11.sp,
-          fontWeight = FontWeight.Medium,
+          fontWeight = FontWeight.SemiBold,
           color = parsedAccent,
           modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
         )
       }
 
-      Spacer(modifier = Modifier.height(28.dp))
+      Spacer(modifier = Modifier.height(22.dp))
 
       CircularProgressIndicator(
-        modifier = Modifier.size(34.dp),
-        color = parsedAccent,
+        modifier = Modifier.size(32.dp),
+        color = Color(0xFF10B981),
         strokeWidth = 3.dp,
-        trackColor = if (isLightMode) Color(0xFFD1FAE5) else Color(0xFF0F1F1A)
+        trackColor = if (isLightMode) Color(0xFFD1FAE5) else Color(0x1AFFFFFF)
       )
     }
   }
@@ -249,7 +238,7 @@ fun PermissionScreen(
       Spacer(modifier = Modifier.height(12.dp))
 
       Text(
-        text = "Nomi Gallery needs access to your device storage to scan and display all your photos and videos cleanly.",
+        text = "Ayaz Gallery needs access to your device storage to scan and display all your photos and videos cleanly.",
         fontSize = 14.sp,
         color = Color(0xFF4B6B5D),
         lineHeight = 21.sp,
